@@ -1,7 +1,52 @@
 <!-- templates/gestion/index.html -->
-<h1>Panel de Gestión</h1>
-<ul>
-    <li><a href="{% url 'gestion:registrar_jugador' %}">Registrar Jugador</a></li>
-    <li><a href="#">Gestionar Equipos</a></li>
-    <!-- otros enlaces -->
-</ul>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Gestión</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px;
+        }
+        .button-container a {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            text-align: center;
+            transition: background-color 0.3s;
+        }
+        .button-container a:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Panel de Gestión</h1>
+    <div class="button-container">
+        <a href="{% url 'gestion:register_jugador' %}">Registrar Jugador</a>
+        <a href="{% url 'gestion:register_organizador' %}">Registrar Organizador</a>
+        <a href="{% url 'gestion:register_director_tecnico' %}">Registrar Director Técnico</a>
+        <a href="{% url 'gestion:login' %}">Login</a>
+    </div>
+    <ul>
+        <li><a href="#">Gestionar Equipos</a></li>
+        <!-- otros enlaces -->
+    </ul>
+</body>
+</html>
