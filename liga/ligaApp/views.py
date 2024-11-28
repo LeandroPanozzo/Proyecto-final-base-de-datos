@@ -45,11 +45,14 @@ def verificar_usuario_con_sql(username, password):
     SELECT TOP 1 'organizador' AS user_type, nombre_usuario AS nombre_usuario, contrasena AS password
     FROM Organizador
     WHERE nombre_usuario = %s
+    SELECT TOP 1 'representante' AS user_type, nombre_usuario AS nombre_usuario, contrasena AS password
+    FROM Representante
+    WHERE nombre_usuario = %s
     """
     try:
         with connection.cursor() as cursor:
             # Pasar los parámetros necesarios
-            cursor.execute(query, [username, username, username])
+            cursor.execute(query, [username, username, username, username])
             result = cursor.fetchone()
             
         if result:
@@ -94,14 +97,10 @@ def login(request):
         if user_data:
             token = generar_token(user_data)
 
-            # Store information in session
-            request.session['token'] = token
-            request.session['user_type'] = user_data['user_type']
-            request.session['username'] = user_data['nombre_usuario']
-
             return JsonResponse({
                 "token": token, 
-                "user_type": user_data['user_type']
+                "user_type": user_data['user_type'],
+                "username": user_data['nombre_usuario']
             })
         else:
             return JsonResponse({"error": "Usuario o contraseña incorrectos."}, status=400)
@@ -174,6 +173,20 @@ def register_director_tecnico(request):
 
     return render(request, "gestion/register_director_tecnico.html")
 
+def register_representante(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+
+        # Verificar si el nombre de usuario ya existe en alguna tabla
+        if verificar_existencia(username):
+            return JsonResponse({"error": "El nombre de usuario ya existe en otra tabla."}, status=400)
+
+        # Registrar el director técnico (solo con nombre de usuario y contraseña)
+        return registrar_usuario(request, "Representante")
+
+    return render(request, "gestion/register_representante.html")
+
 #Verifica existencia de un usuario con email y username especifico
 def verificar_existencia(username):
     query = """
@@ -184,6 +197,8 @@ def verificar_existencia(username):
         SELECT nombre_usuario FROM Jugador
         UNION ALL
         SELECT nombre_usuario FROM Organizador
+        UNION ALL
+        SELECT nombre_usuario FROM Representante
     ) AS Combined
     WHERE nombre_usuario = %s;
     """
@@ -196,84 +211,6 @@ def verificar_existencia(username):
 def index(request):
     return render(request, 'gestion/index.html')  # Vista principal para /gestion/
 
-from django.contrib.auth.decorators import login_required
-
-@login_required
-def editar_datos_usuario(request):
-    user_type = request.user.user_type  # Determina el tipo de usuario
-
-    if request.method == 'GET':
-        usuario = None
-
-        # Ejecuta consulta SQL para obtener los datos del usuario
-        with connection.cursor() as cursor:
-            if user_type == 'jugador':
-                cursor.execute("SELECT * FROM gestion_jugador WHERE nombre_usuario = %s", [request.user.username])
-                usuario = cursor.fetchone()
-            elif user_type == 'tecnico':
-                cursor.execute("SELECT * FROM gestion_director_tecnico WHERE nombre_usuario = %s", [request.user.username])
-                usuario = cursor.fetchone()
-            elif user_type == 'organizador':
-                cursor.execute("SELECT * FROM gestion_organizador WHERE nombre_usuario = %s", [request.user.username])
-                usuario = cursor.fetchone()
-            else:
-                return JsonResponse({"error": "Tipo de usuario desconocido"}, status=400)
-
-        # Asegúrate de convertir el resultado a un diccionario si es necesario
-        return render(request, 'gestion/editar_datos_usuario.html', {'usuario': usuario, 'user_type': user_type})
-
-    elif request.method == 'POST':
-        # Actualizar los datos del usuario según el tipo
-        data = request.POST
-        with connection.cursor() as cursor:
-            if user_type == 'jugador':
-                cursor.execute("""
-                    UPDATE gestion_jugador
-                    SET Nombre = %s, Apellido = %s, Telefono = %s
-                    WHERE nombre_usuario = %s
-                """, [data.get('Nombre'), data.get('Apellido'), data.get('Telefono'), request.user.username])
-            elif user_type == 'tecnico':
-                cursor.execute("""
-                    UPDATE gestion_director_tecnico
-                    SET Nombre = %s, Apellido = %s
-                    WHERE nombre_usuario = %s
-                """, [data.get('Nombre'), data.get('Apellido'), request.user.username])
-            elif user_type == 'organizador':
-                cursor.execute("""
-                    UPDATE gestion_organizador
-                    SET Nombre = %s, Apellido = %s, Telefono = %s
-                    WHERE nombre_usuario = %s
-                """, [data.get('Nombre'), data.get('Apellido'), data.get('Telefono'), request.user.username])
-            else:
-                return JsonResponse({"error": "Tipo de usuario desconocido"}, status=400)
-
-        return JsonResponse({"message": "Datos actualizados correctamente"}, status=200)
-
-    return JsonResponse({"error": "Método no permitido"}, status=405)
-
-
-@login_required
-def perfil_usuario(request):
-    # Check if token exists in session or headers
-    token = request.session.get('token') or request.headers.get('Authorization')
-    
-    if not token:
-        return JsonResponse({"error": "No autorizado"}, status=401)
-
-    # Retrieve user information from session or token
-    user_type = request.session.get('user_type')
-    username = request.session.get('username')
-
-    if not user_type or not username:
-        return JsonResponse({"error": "Información de usuario no encontrada"}, status=401)
-
-    # Prepare context with user information
-    context = {
-        'username': username,
-        'user_type': user_type,
-    }
-
-    return render(request, 'gestion/perfil_usuario.html', context)
 
 def home(request):
     return render(request, 'gestion/home.html')  # Asegúrate de que la ruta esté correcta

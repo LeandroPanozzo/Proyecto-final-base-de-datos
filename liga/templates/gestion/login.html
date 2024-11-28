@@ -112,6 +112,7 @@
                 if (data.token) {
                     sessionStorage.setItem("token", data.token);
                     sessionStorage.setItem("user_type", data.user_type);
+                    sessionStorage.setItem("username", data.username);
                     window.location.href = "/gestion/home";
                 } else {
                     alert("Usuario o contraseña incorrectos");
