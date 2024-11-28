@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Datos</title>
+</head>
+<body>
+    <h1>Editar tus datos</h1>
+    <form method="POST" action="{% url 'gestion:editar_datos_usuario' %}">
+        {% csrf_token %}
+        <label for="Nombre">Nombre:</label>
+        <input type="text" id="Nombre" name="Nombre" value="{{ usuario.Nombre }}"><br>
+
+        <label for="Apellido">Apellido:</label>
+        <input type="text" id="Apellido" name="Apellido" value="{{ usuario.Apellido }}"><br>
+
+        {% if user_type == 'jugador' or user_type == 'organizador' %}
+        <label for="Telefono">Teléfono:</label>
+        <input type="text" id="Telefono" name="Telefono" value="{{ usuario.Telefono }}"><br>
+        {% endif %}
+
+        <button type="submit">Guardar Cambios</button>
+    </form>
+</body>
+</html>

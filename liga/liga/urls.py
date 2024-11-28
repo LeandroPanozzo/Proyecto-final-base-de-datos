@@ -23,5 +23,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),  # Ruta para el panel de administración
     path('gestion/', include('ligaApp.urls')),  # Incluir las URLs de tu aplicación
     path('', RedirectView.as_view(url='/gestion/', permanent=True)),  # Redirigir la raíz a /gestion/
+    path('accounts/', include('django.contrib.auth.urls')),  # Esto incluye las rutas predeterminadas de autenticación de Django
 ]
 

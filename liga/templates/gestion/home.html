@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página de Inicio</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .home-container {
+            width: 80%;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .welcome-message {
+            font-size: 20px;
+            margin-bottom: 30px;
+        }
+
+        .menu {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .menu li {
+            margin: 10px 0;
+        }
+
+        .menu a {
+            text-decoration: none;
+            color: #007bff;
+            font-size: 18px;
+        }
+
+        .menu a:hover {
+            text-decoration: underline;
+        }
+
+        .logout-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="home-container">
+        <h1>Bienvenido a la Página de Inicio</h1>
+        <div class="welcome-message">
+            <span id="welcomeMessage">Cargando...</span>
+        </div>
+        
+        <ul class="menu">
+            <li><a href="{% url 'gestion:perfil_usuario' %}">Ver mi perfil</a></li>
+            <li><a href="/editar_datos">Editar mis datos</a></li>
+        </ul>
+
+        <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+    const token = sessionStorage.getItem("token");
+    const userType = sessionStorage.getItem("user_type");
+
+    // Verificar si el token no existe
+    if (!token) {
+        window.location.href = "/login"; // Redirige a la página de login si no hay token
+    }
+
+    // Mostrar el tipo de usuario en el mensaje de bienvenida
+    const welcomeMessage = document.getElementById("welcomeMessage");
+    if (userType === "jugador") {
+        welcomeMessage.textContent = "¡Bienvenido, jugador!";
+    } else if (userType === "tecnico") {
+        welcomeMessage.textContent = "¡Bienvenido, técnico!";
+    } else if (userType === "organizador") {
+        welcomeMessage.textContent = "¡Bienvenido, organizador!";
+    } else {
+        welcomeMessage.textContent = "¡Bienvenido!";
+    }
+});
+
+
+        function logout() {
+            sessionStorage.removeItem("token");
+            sessionStorage.removeItem("user_type");
+            window.location.href = "/login";  // Redirige a la página de login después de cerrar sesión
+        }
+    </script>
+</body>
+</html>

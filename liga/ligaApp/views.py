@@ -6,7 +6,6 @@ from django.http import JsonResponse
 from django.http import HttpResponse
 import pyodbc
 import uuid
-import bcrypt
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import csrf_exempt
@@ -90,19 +89,25 @@ def login(request):
         username = request.POST.get('username')
         password = request.POST.get('password')
 
-        # Consultar las tres tablas para ver si el usuario existe
         user_data = verificar_usuario_con_sql(username, password)
 
         if user_data:
-            # Generamos un token con la información del tipo de usuario
             token = generar_token(user_data)
 
-            # Retornamos el token como una respuesta JSON
-            return JsonResponse({"token": token, "user_type": user_data['user_type']})
+            # Store information in session
+            request.session['token'] = token
+            request.session['user_type'] = user_data['user_type']
+            request.session['username'] = user_data['nombre_usuario']
+
+            return JsonResponse({
+                "token": token, 
+                "user_type": user_data['user_type']
+            })
         else:
             return JsonResponse({"error": "Usuario o contraseña incorrectos."}, status=400)
 
     return render(request, 'gestion/login.html')
+
 
 
 def registrar_usuario(request, tabla):
@@ -191,4 +196,84 @@ def verificar_existencia(username):
 def index(request):
     return render(request, 'gestion/index.html')  # Vista principal para /gestion/
 
+from django.contrib.auth.decorators import login_required
 
+@login_required
+def editar_datos_usuario(request):
+    user_type = request.user.user_type  # Determina el tipo de usuario
+
+    if request.method == 'GET':
+        usuario = None
+
+        # Ejecuta consulta SQL para obtener los datos del usuario
+        with connection.cursor() as cursor:
+            if user_type == 'jugador':
+                cursor.execute("SELECT * FROM gestion_jugador WHERE nombre_usuario = %s", [request.user.username])
+                usuario = cursor.fetchone()
+            elif user_type == 'tecnico':
+                cursor.execute("SELECT * FROM gestion_director_tecnico WHERE nombre_usuario = %s", [request.user.username])
+                usuario = cursor.fetchone()
+            elif user_type == 'organizador':
+                cursor.execute("SELECT * FROM gestion_organizador WHERE nombre_usuario = %s", [request.user.username])
+                usuario = cursor.fetchone()
+            else:
+                return JsonResponse({"error": "Tipo de usuario desconocido"}, status=400)
+
+        # Asegúrate de convertir el resultado a un diccionario si es necesario
+        return render(request, 'gestion/editar_datos_usuario.html', {'usuario': usuario, 'user_type': user_type})
+
+    elif request.method == 'POST':
+        # Actualizar los datos del usuario según el tipo
+        data = request.POST
+        with connection.cursor() as cursor:
+            if user_type == 'jugador':
+                cursor.execute("""
+                    UPDATE gestion_jugador
+                    SET Nombre = %s, Apellido = %s, Telefono = %s
+                    WHERE nombre_usuario = %s
+                """, [data.get('Nombre'), data.get('Apellido'), data.get('Telefono'), request.user.username])
+            elif user_type == 'tecnico':
+                cursor.execute("""
+                    UPDATE gestion_director_tecnico
+                    SET Nombre = %s, Apellido = %s
+                    WHERE nombre_usuario = %s
+                """, [data.get('Nombre'), data.get('Apellido'), request.user.username])
+            elif user_type == 'organizador':
+                cursor.execute("""
+                    UPDATE gestion_organizador
+                    SET Nombre = %s, Apellido = %s, Telefono = %s
+                    WHERE nombre_usuario = %s
+                """, [data.get('Nombre'), data.get('Apellido'), data.get('Telefono'), request.user.username])
+            else:
+                return JsonResponse({"error": "Tipo de usuario desconocido"}, status=400)
+
+        return JsonResponse({"message": "Datos actualizados correctamente"}, status=200)
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
+@login_required
+def perfil_usuario(request):
+    # Check if token exists in session or headers
+    token = request.session.get('token') or request.headers.get('Authorization')
+    
+    if not token:
+        return JsonResponse({"error": "No autorizado"}, status=401)
+
+    # Retrieve user information from session or token
+    user_type = request.session.get('user_type')
+    username = request.session.get('username')
+
+    if not user_type or not username:
+        return JsonResponse({"error": "Información de usuario no encontrada"}, status=401)
+
+    # Prepare context with user information
+    context = {
+        'username': username,
+        'user_type': user_type,
+    }
+
+    return render(request, 'gestion/perfil_usuario.html', context)
+
+def home(request):
+    return render(request, 'gestion/home.html')  # Asegúrate de que la ruta esté correcta
